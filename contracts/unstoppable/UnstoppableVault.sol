@@ -57,7 +57,7 @@ contract UnstoppableVault is IERC3156FlashLender, ReentrancyGuard, Owned, ERC462
         if (block.timestamp < end && _amount < maxFlashLoan(_token)) {
             return 0;
         } else {
-            return _amount.mulWadUp(FEE_FACTOR);
+            return _amount.mulWadUp(FEE_FACTOR); // _amount * 0.05
         }
     }
 
@@ -72,6 +72,7 @@ contract UnstoppableVault is IERC3156FlashLender, ReentrancyGuard, Owned, ERC462
      * @inheritdoc ERC4626
      */
     function totalAssets() public view override returns (uint256) {
+        // @audit-ok - This is just checking the `locked` state var from `ReentrancyGuard` (inherited, at slot 0), making sure this is not called in the middle of a `nonReentrant` function.
         assembly { // better safe than sorry
             if eq(sload(0), 2) {
                 mstore(0x00, 0xed3ba6a6)
@@ -92,14 +93,21 @@ contract UnstoppableVault is IERC3156FlashLender, ReentrancyGuard, Owned, ERC462
     ) external returns (bool) {
         if (amount == 0) revert InvalidAmount(0); // fail early
         if (address(asset) != _token) revert UnsupportedCurrency(); // enforce ERC3156 requirement
+
         uint256 balanceBefore = totalAssets();
+
+        // @audit-ok - this is comparing shares (`totalSupply`) with assets (`totalAssets`), is this ok if another person deposits appart from the initial deposit of the deployer?
+        // @audit-issue - if `asset` is transferred to this contract externally (i.e. without using ERC4626.deposit()) this condition will break, making the function unusable.
         if (convertToShares(totalSupply) != balanceBefore) revert InvalidBalance(); // enforce ERC4626 requirement
+
         uint256 fee = flashFee(_token, amount);
         // transfer tokens out + execute callback on receiver
         ERC20(_token).safeTransfer(address(receiver), amount);
+
         // callback must return magic value, otherwise assume it failed
         if (receiver.onFlashLoan(msg.sender, address(asset), amount, fee, data) != keccak256("IERC3156FlashBorrower.onFlashLoan"))
             revert CallbackFailed();
+
         // pull amount + fee from receiver, then pay the fee to the recipient
         ERC20(_token).safeTransferFrom(address(receiver), address(this), amount + fee);
         ERC20(_token).safeTransfer(feeRecipient, fee);

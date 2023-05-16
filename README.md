@@ -7,3 +7,7 @@ Featuring flash loans, price oracles, governance, NFTs, lending pools, smart con
 ## Play
 
 Visit [damnvulnerabledefi.xyz](https://damnvulnerabledefi.xyz)
+
+## My Solutions
+
+There are comments on the hardhat test files of each challenge, and also `@audit-issue` tags on the specific parts of the contracts' code that are vulnerable.
