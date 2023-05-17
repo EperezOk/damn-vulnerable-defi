@@ -22,12 +22,13 @@ contract FlashLoanReceiver is IERC3156FlashBorrower {
     }
 
     function onFlashLoan(
-        address,
+        address, // @audit-issue - it's not checking that the flash loan was requested by itself, allowing anyone to request flashLoans on its behalf.
         address token,
         uint256 amount,
         uint256 fee,
         bytes calldata
     ) external returns (bytes32) {
+        // Checks `msg.sender` == `pool`
         assembly { // gas savings
             if iszero(eq(sload(pool.slot), caller())) {
                 mstore(0x00, 0x48f5c3ed)

