@@ -20,6 +20,7 @@ contract SideEntranceLenderPool {
     event Deposit(address indexed who, uint256 amount);
     event Withdraw(address indexed who, uint256 amount);
 
+    // @audit-issue - this function enables repaying the flash loan while updating the balance, so that a subsequent withdraw can drain the pool
     function deposit() external payable {
         unchecked {
             balances[msg.sender] += msg.value;
