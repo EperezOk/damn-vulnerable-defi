@@ -104,6 +104,7 @@ contract SimpleGovernance is ISimpleGovernance {
     }
 
     function _hasEnoughVotes(address who) private view returns (bool) {
+        // @audit-issue - since the `snapshot()` function of the token is public, anyone can take a flashloan of the governance token, take a snapshot, make a proposal and return the tokens, which will go through since this returns true. The proposal cannot be removed afterwards.
         uint256 balance = _governanceToken.getBalanceAtLastSnapshot(who);
         uint256 halfTotalSupply = _governanceToken.getTotalSupplyAtLastSnapshot() / 2;
         return balance > halfTotalSupply;

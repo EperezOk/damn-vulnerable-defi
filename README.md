@@ -11,3 +11,5 @@ Visit [damnvulnerabledefi.xyz](https://damnvulnerabledefi.xyz)
 ## My Solutions
 
 There are comments on the hardhat test files of each challenge, and also `@audit-issue` tags on the specific parts of the contracts' code that are vulnerable.
+
+Attacker contracts are present in the same folder as the victim contracts where needed.
